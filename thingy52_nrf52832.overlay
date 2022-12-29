@@ -1,0 +1,13 @@
+/{
+    motor {
+        compatible = "gpio-keys";
+        motor0: motor0 {
+            /* gpio flags need validation */
+            gpios = <&gpio0 18 GPIO_ACTIVE_HIGH>;
+            label = "Motor";
+        };
+    };
+    aliases {
+        motor0 = &motor0;
+    };
+};

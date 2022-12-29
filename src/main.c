@@ -12,7 +12,7 @@
 #include <zephyr/sys/printk.h>
 #include <inttypes.h>
 
-#define SLEEP_TIME_MS	1
+#define SLEEP_TIME_MS	500
 
 /*
  * Get button configuration from the devicetree sw0 alias. This is mandatory.
@@ -25,6 +25,8 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios,
 							      {0});
 static struct gpio_callback button_cb_data;
 
+#define MOTOR_NODE	DT_NODELABEL(motor0)
+
 /*
  * The led0 devicetree alias is optional. If present, we'll use it
  * to turn on the LED whenever the button is pressed.
@@ -32,11 +34,20 @@ static struct gpio_callback button_cb_data;
 static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
 						     {0});
 
+static struct gpio_dt_spec motor = GPIO_DT_SPEC_GET_OR(MOTOR_NODE, gpios,
+						     {0});
+
+int button_pressed_flag = 0;
+
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
 {
 	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+	
+	button_pressed_flag = 1;
 }
+
+
 
 void main(void)
 {
@@ -83,16 +94,37 @@ void main(void)
 		}
 	}
 
+	// const struct device * dev = device_get_binding(&gpio0);
+
+	gpio_pin_configure_dt(&motor, GPIO_OUTPUT);
+
+
 	printk("Press the button\n");
 	if (led.port) {
 		while (1) {
-			/* If we have an LED, match its state to the button's. */
-			int val = gpio_pin_get_dt(&button);
-
-			if (val >= 0) {
-				gpio_pin_set_dt(&led, val);
+			k_msleep(1);
+			if (button_pressed_flag == 1){
+				gpio_pin_set_dt(&led, 1);
+				gpio_pin_set_dt(&motor, 1);
+				k_msleep(1400);
+				gpio_pin_set_dt(&led, 0);
+				gpio_pin_set_dt(&motor, 0);
+				button_pressed_flag = 0;
 			}
-			k_msleep(SLEEP_TIME_MS);
+			// /* If we have an LED, match its state to the button's. */
+			// int val = gpio_pin_get_dt(&button);
+
+			// if (val == 1) {
+				
+			// }
+			// k_msleep(SLEEP_TIME_MS);
+			// gpio_pin_set_dt(&motor, 0);
+			// gpio_pin_set_dt(&led, 0);
+			// val = gpio_pin_get_dt(&button);
+			// while (val == 1) {
+			// 	k_msleep(2000);
+			// 	val = gpio_pin_get_dt(&button);
+			// }
 		}
 	}
 }
